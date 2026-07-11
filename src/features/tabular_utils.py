@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 NUMERIC = ["age", "diameter_1", "diameter_2", "fitspatrick"]
@@ -15,5 +16,5 @@ def select_features(df):
     for c in NUMERIC:
         X[c] = pd.to_numeric(X[c], errors="coerce")
     for c in CATEGORICAL:
-        X[c] = X[c].astype("object")
+        X[c] = X[c].map(lambda v: str(v) if pd.notna(v) else np.nan)
     return X

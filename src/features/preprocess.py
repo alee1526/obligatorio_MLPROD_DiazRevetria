@@ -1,8 +1,9 @@
 import joblib
 import pandas as pd
 
-from src.data.dataset import load_with_splits
+from src.data.dataset import load_dataset, load_with_splits
 from src.data.dataset_utils import DATA_DIR, PROCESSED_DIR, TARGET
+from src.features.image_utils import IMG_SIZE, PROCESSED_IMAGES_DIR, resize_image
 from src.features.tabular import build_tabular_transformer
 from src.features.tabular_utils import select_features
 
@@ -35,8 +36,20 @@ def preprocess_tabular():
     print(f"transformer ajustado -> {MODELS_DIR / 'tabular_transformer.joblib'}")
 
 
+def preprocess_images(size=IMG_SIZE):
+    df = load_dataset()
+    PROCESSED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    n = len(df)
+    for i, row in enumerate(df.itertuples(index=False), 1):
+        resize_image(row.img_path, PROCESSED_IMAGES_DIR / row.img_id, size)
+        if i % 500 == 0 or i == n:
+            print(f"  imágenes: {i}/{n}")
+    print(f"imágenes RGB {size}x{size} -> {PROCESSED_IMAGES_DIR}")
+
+
 def main():
     preprocess_tabular()
+    preprocess_images()
 
 
 if __name__ == "__main__":
