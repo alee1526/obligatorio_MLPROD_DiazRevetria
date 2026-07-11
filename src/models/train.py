@@ -1,3 +1,7 @@
+import os
+
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+
 import mlflow
 import numpy as np
 import torch
@@ -10,6 +14,7 @@ from src.models.dataset import CLASS_TO_IDX, MultimodalDataset
 from src.models.metrics import compute_metrics
 
 MODELS_DIR = DATA_DIR.parent / "models"
+MLFLOW_URI = str(DATA_DIR.parent / "mlruns")
 
 
 def get_device():
@@ -76,6 +81,7 @@ def main():
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     best_f1 = -1.0
+    mlflow.set_tracking_uri(MLFLOW_URI)
     mlflow.set_experiment("skin-lesion")
     with mlflow.start_run():
         mlflow.log_params(cfg.as_dict())
