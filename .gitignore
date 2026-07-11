@@ -9,11 +9,11 @@ env/
 .DS_Store
 .env
 
-data/*
-!data/.gitkeep
+/data/*
+!/data/.gitkeep
 
-models/
-mlruns/
+/models/
+/mlruns/
 *.pkl
 *.pt
 *.pth
