@@ -16,27 +16,30 @@ CLASS_TO_IDX = {c: i for i, c in enumerate(CLASSES)}
 NON_FEATURE = {"img_id", "split", TARGET}
 
 
-def build_transform(train):
+def build_transform(train, rotation=20, translate=0.05, scale=0.1, color=0.1, erase=0.0):
     steps = []
     if train:
         steps += [
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
-            transforms.RandomRotation(20),
-            transforms.ColorJitter(brightness=0.1, contrast=0.1),
+            transforms.RandomRotation(rotation),
+            transforms.RandomAffine(0, translate=(translate, translate), scale=(1 - scale, 1 + scale)),
+            transforms.ColorJitter(brightness=color, contrast=color, saturation=color),
         ]
     steps += [transforms.ToTensor(), transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD)]
+    if train and erase > 0:
+        steps.append(transforms.RandomErasing(p=erase))
     return transforms.Compose(steps)
 
 
 class MultimodalDataset(Dataset):
     def __init__(self, split, tabular_path=PROCESSED_DIR / "tabular.parquet",
-                 images_dir=PROCESSED_IMAGES_DIR):
+                 images_dir=PROCESSED_IMAGES_DIR, aug=None):
         df = pd.read_parquet(tabular_path)
         self.df = df[df["split"] == split].reset_index(drop=True)
         self.images_dir = Path(images_dir)
         self.feature_cols = [c for c in df.columns if c not in NON_FEATURE]
-        self.transform = build_transform(split == "train")
+        self.transform = build_transform(split == "train", **(aug or {}))
 
     def __len__(self):
         return len(self.df)

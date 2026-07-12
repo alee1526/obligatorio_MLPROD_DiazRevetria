@@ -1,15 +1,37 @@
 architecture: multimodal
 backbone: efficientnet_b0
-unfreeze_blocks: 2   # 0 = backbone congelado, N = últimos N bloques entrenables, -1 = todo
+unfreeze_blocks: 3   # 0 = backbone congelado, N = últimos N bloques entrenables, -1 = todo
 
-epochs: 10
-batch_size: 32
-lr: 0.0001
-weight_decay: 0.0001
+epochs: 100
+batch_size: 64
+lr: 0.001244638164525581
+weight_decay: 0.0003523014650678491
 seed: 42
 
-# dimensiones de las ramas
-dropout: 0.3
-tab_hidden: 64
-tab_out: 32
-fusion_hidden: 128
+# dimensiones de las ramas (de best_params.json, val macro-F1 0.771)
+dropout: 0.3117253374036961
+tab_hidden: 128
+tab_out: 64
+fusion_hidden: 64
+
+# pérdida: weighted_ce | focal
+loss: weighted_ce
+focal_gamma: 1.631575606414672
+
+# scheduler: baja el LR cuando val se estanca (pasos más chicos)
+lr_factor: 0.5     # multiplica el LR por esto al estancarse
+lr_patience: 2     # épocas sin mejora antes de bajar el LR
+min_lr: 0.000001
+
+# early stopping (épocas sin mejora antes de cortar; > lr_patience)
+patience: 10
+
+# data augmentation (solo en train)
+aug_rotation: 15     # grados de rotación
+aug_translate: 0.05  # traslación máxima (fracción)
+aug_scale: 0.1       # zoom +/- (fracción)
+aug_color: 0.1838865764547642   # brillo/contraste/saturación
+aug_erase: 0.15487226696027984  # prob. de RandomErasing (0 = off)
+
+# optuna
+n_trials: 25
