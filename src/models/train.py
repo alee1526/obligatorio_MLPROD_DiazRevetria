@@ -105,6 +105,7 @@ def main():
                     "feature_cols": train_ds.feature_cols,
                 }, MODELS_DIR / "model.pt")
         mlflow.log_metric("best_val_macro_f1", best_f1)
+        mlflow.log_artifact(str(MODELS_DIR / "model.pt"))
     print(f"mejor macro-F1 en val: {best_f1:.3f} -> {MODELS_DIR / 'model.pt'}")
 
 
