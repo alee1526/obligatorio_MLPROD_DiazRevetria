@@ -155,7 +155,7 @@
   <figcaption><span class="etiqueta">Figura 10.</span> Proporción de cada clase en cada conjunto. Pese a que el grano mínimo es el paciente, las proporciones quedan prácticamente idénticas: el basocelular representa el 36,8 por ciento en los tres conjuntos y el melanoma ronda el 2 por ciento en todos.</figcaption>
 </figure>
 
-<p>La verificación de que no hay fuga es explícita y no una promesa: la función <code>patient_overlap</code> cuenta cuántos identificadores de paciente aparecen en más de un conjunto, y el resultado tiene que ser cero. El notebook <a href="https://github.com/alee1526/obligatorio_MLPROD_DiazRevetria/blob/main/notebooks/02_split.ipynb"><code>02_split.ipynb</code></a> corre esa comprobación con un <code>assert</code>, de modo que si alguna vez dejara de cumplirse, el notebook falla en lugar de seguir de largo silenciosamente.</p>
+<p>El notebook <a href="https://github.com/alee1526/obligatorio_MLPROD_DiazRevetria/blob/main/notebooks/02_split.ipynb"><code>02_split.ipynb</code></a> verifica con un <code>assert</code> que ningún identificador de paciente aparezca en más de un conjunto, de modo que si alguna vez dejara de cumplirse, el notebook falla en lugar de seguir de largo silenciosamente.</p>
 
 <p>El reparto resultante se guarda en <code>data/splits.csv</code> y se versiona en Git. Es un archivo liviano que solo mapea cada imagen a su conjunto, y versionarlo cumple dos funciones: cualquiera que clone el repositorio entrena y evalúa exactamente sobre la misma partición, y queda registrado a qué reparto corresponde cada métrica que se reporta. Es la parte de datos de la trazabilidad.</p>
 
@@ -164,7 +164,7 @@
 <!-- ================================================================= 5 -->
 <h2 id="s5"><span class="num">5</span>Preprocesamiento y training-serving skew</h2>
 
-<p>El segundo desafío que plantea la consigna es prevenir el training-serving skew, que es la diferencia silenciosa entre lo que el modelo vio al entrenar y lo que recibe en producción. Es un problema traicionero porque no falla ruidosamente: el sistema sigue devolviendo predicciones, solo que peores, y nadie se entera.</p>
+<p>El segundo desafío que plantea la consigna es prevenir el training-serving skew, que es la diferencia silenciosa entre lo que el modelo vio al entrenar y lo que recibe en producción.</p>
 
 <p>La estrategia fue estructural más que declarativa. Todo el preprocesamiento vive en <a href="https://github.com/alee1526/obligatorio_MLPROD_DiazRevetria/blob/main/src/features/"><code>src/features/</code></a>, un módulo que importan tanto el entrenamiento como la API: no hay dos implementaciones que sincronizar, hay una sola. El objeto que transforma la tabla se ajusta una vez durante el entrenamiento, se guarda en <code>models/tabular_transformer.joblib</code>, y es ese mismo archivo, no una reconstrucción equivalente, el que carga el servicio de predicción. El refuerzo final está en el checkpoint: además de los pesos, <code>model.pt</code> guarda la lista ordenada de las columnas con las que se entrenó, y <a href="https://github.com/alee1526/obligatorio_MLPROD_DiazRevetria/blob/main/src/models/evaluate.py"><code>evaluate.py</code></a> aborta si no coinciden. Sin esa guarda, regenerar el parquet con otro orden haría que las features entraran corridas y las métricas no significarían nada, pero todo seguiría corriendo sin error.</p>
 
@@ -210,7 +210,7 @@
 
 <p>El learning rate baja a la mitad cuando la validación se estanca dos épocas, con un piso, y el entrenamiento corta cuando pasan diez épocas sin mejorar. Un detalle importante es qué se guarda: no el modelo de la última época sino el de la mejor, medido por macro-F1 en validación. Las curvas de la sección de resultados muestran por qué esto no es un tecnicismo.</p>
 
-<p>El aumento de datos se aplica solo al entrenamiento e incluye espejados horizontales y verticales, rotaciones, traslaciones, zoom, variación de brillo y contraste y borrado aleatorio de un parche. Los dos espejados son legítimos acá porque una lesión de piel no tiene orientación canónica: una foto dada vuelta sigue siendo una foto válida de la misma lesión. En otros dominios, como el reconocimiento de dígitos, esa transformación destruiría la etiqueta.</p>
+<p>El aumento de datos se aplica solo al entrenamiento e incluye espejados horizontales y verticales, rotaciones, traslaciones, zoom, variación de brillo y contraste y borrado aleatorio de un parche. Los dos espejados son legítimos acá porque una lesión de piel no tiene orientación canónica: una foto dada vuelta sigue siendo una foto válida de la misma lesión.</p>
 
 <!-- ================================================================= 7 -->
 <h2 id="s7"><span class="num">7</span>Optimización y su impacto</h2>
@@ -221,15 +221,10 @@
 
 <figure>
   <img src="img/optuna_historia.png" alt="Historia de la optimización de Optuna">
-  <figcaption><span class="etiqueta">Figura 12.</span> Los cien trials. Los puntos claros son trials podados y los oscuros los que corrieron hasta el final. La línea roja marca el mejor resultado acumulado. El trial 56 alcanza 0,7843 de macro-F1 en validación y nada lo supera en los cuarenta y cuatro trials siguientes.</figcaption>
+  <figcaption><span class="etiqueta">Figura 12.</span> Los cien trials. Los puntos claros son trials detenidos por pruning y los oscuros los que corrieron hasta el final. La línea roja marca el mejor resultado acumulado. El trial 56 alcanza 0,7843 de macro-F1 en validación y nada lo supera en los cuarenta y cuatro trials siguientes.</figcaption>
 </figure>
 
-<p>Setenta y tres de los cien trials fueron podados. El podador corta un trial en cuanto queda claro que va peor que la mediana de los anteriores a la misma altura, lo que permite no gastar el presupuesto en configuraciones malas. Sin poda, la búsqueda habría costado bastante más de las cinco horas y media que llevó, y ese ahorro es en sí mismo un resultado del que la consigna pide hablar.</p>
-
-<figure>
-  <img src="img/optuna_importancia.png" alt="Importancia de los hiperparámetros">
-  <figcaption><span class="etiqueta">Figura 13.</span> Importancia relativa de cada hiperparámetro sobre el resultado, estimada por fANOVA.</figcaption>
-</figure>
+<p>Setenta y tres de los cien trials se detuvieron por pruning. El pruning corta un trial en cuanto queda claro que va peor que la mediana de los anteriores a la misma altura, lo que permite no gastar el presupuesto en configuraciones malas. Sin pruning, la búsqueda habría costado bastante más de las cinco horas y media que llevó.</p>
 
 <h3>Qué aprendimos de la búsqueda</h3>
 
@@ -237,20 +232,14 @@
 
 <figure>
   <img src="img/optuna_hallazgos.png" alt="Efecto del fine-tuning parcial y del backbone">
-  <figcaption><span class="etiqueta">Figura 14.</span> A la izquierda, el macro-F1 medio según cuántos bloques del backbone se descongelan; a la derecha, según el backbone elegido. Solo se cuentan los trials que corrieron hasta el final.</figcaption>
+  <figcaption><span class="etiqueta">Figura 13.</span> A la izquierda, el macro-F1 medio según cuántos bloques del backbone se descongelan; a la derecha, según el backbone elegido. Solo se cuentan los trials que corrieron hasta el final.</figcaption>
 </figure>
 
-<p>El hallazgo más contundente es el del fine-tuning parcial. Con el backbone completamente congelado, el modelo se queda en 0,434 de macro-F1 medio: las características de ImageNet, aprendidas sobre perros, autos y muebles, no alcanzan para distinguir un carcinoma de una queratosis. Descongelar un solo bloque salta a 0,712, y dos bloques llegan a 0,747, que es el óptimo. A partir de ahí empieza a bajar, porque con 1.640 imágenes descongelar más parámetros es invitar al sobreajuste. Hay una ventana, y está en dos.</p>
+<p>El hallazgo más contundente es el del fine-tuning parcial. Con el backbone completamente congelado, el modelo se queda en 0,434 de macro-F1 medio: las características de ImageNet, aprendidas sobre perros, autos y muebles, no alcanzan para distinguir un carcinoma de una queratosis. Descongelar un solo bloque salta a 0,712, y dos bloques llegan a 0,747, que es el óptimo. A partir de ahí empieza a bajar.</p>
 
 <p>El segundo hallazgo es que la focal loss no aportó. Entre los trials completos, los que usaron entropía cruzada ponderada promedian 0,731 y los que usaron focal loss promedian 0,534. Ninguno de los ocho mejores trials usa focal. La interpretación es que la focal loss está diseñada para atacar el desbalance concentrando el aprendizaje en los ejemplos difíciles, pero el peso inverso a la frecuencia ya resuelve el desbalance, y encima la focal agrega un hiperparámetro más que ajustar. Vale la pena decirlo así: la implementamos, la evaluamos y los datos dijeron que no servía en este problema. Eso es un resultado, no un fracaso.</p>
 
 <p>Sobre los backbones, la búsqueda convergió a la B2, que probó sesenta y siete veces contra quince de la B0 y diez de la B3. Entre los trials completos la B2 promedia 0,728 contra 0,622 de la B0. La B3, más grande, no mejora, lo que es coherente con la escasez de datos.</p>
-
-<h3>Cerrar el ciclo</h3>
-
-<p>Acá hay que contar algo que encontramos al preparar este informe, porque omitirlo sería deshonesto y además la historia es instructiva. Al momento de escribir, el modelo que estaba en producción era una EfficientNet-B0 con tres bloques descongelados, que venía de un estudio anterior más chico, de veinticinco trials, y alcanzaba 0,771. El estudio de cien trials, con su ganador de 0,784 y su B2, se había corrido pero sus resultados nunca se habían llevado al archivo de configuración ni al modelo final. El paso de reentrenar con los mejores hiperparámetros había quedado pendiente y el sistema estaba sirviendo un modelo peor que el mejor que la propia búsqueda había encontrado.</p>
-
-<p>Se cerró el ciclo: se actualizó <code>config.yaml</code> con los parámetros del trial 56 y se reentrenó. El resultado tiene un valor extra, porque el reentrenamiento reprodujo exactamente el 0,7843 del trial original. Que un experimento corrido dentro de la búsqueda se reproduzca con el mismo número al volver a correrlo por separado, con la misma semilla, es evidencia directa de que la trazabilidad y el control de la aleatoriedad funcionan.</p>
 
 <table>
   <caption><span class="etiqueta">Tabla 1.</span> Impacto acumulado de las decisiones de optimización, medido en macro-F1 sobre validación. Las tres corridas están registradas en MLflow y son reproducibles desde el repositorio.</caption>
@@ -271,27 +260,27 @@
 <!-- ================================================================= 8 -->
 <h2 id="s8"><span class="num">8</span>Trazabilidad de los experimentos</h2>
 
-<p>La trazabilidad se resolvió en los tres niveles que pide la consigna, y con dos sistemas que se complementan.</p>
+<p>La trazabilidad se hizo sobre los experimentos, con dos sistemas que se complementan.</p>
 
 <figure class="alta">
   <img src="img/mlflow_tuning.jpg" alt="Interfaz de MLflow mostrando los trials del tuning">
-  <figcaption><span class="etiqueta">Figura 15.</span> La interfaz de MLflow con los trials del experimento de búsqueda de hiperparámetros. Cada fila es un trial con sus parámetros y sus métricas por época, y los que tienen tilde verde son los que corrieron hasta el final.</figcaption>
+  <figcaption><span class="etiqueta">Figura 14.</span> La interfaz de MLflow con los trials del experimento de búsqueda de hiperparámetros. Cada fila es un trial con sus parámetros y sus métricas por época, y los que tienen tilde verde son los que corrieron hasta el final.</figcaption>
 </figure>
 
 <p>Los experimentos se registran en MLflow, con dos experimentos separados: <code>skin-lesion</code> para los entrenamientos y <code>skin-lesion-tuning</code> para la búsqueda, que suman 109 corridas. De cada una se guardan todos los hiperparámetros, las métricas época por época y el checkpoint como artefacto. La búsqueda usa corridas anidadas, de modo que los cien trials cuelgan de una corrida padre y el árbol se puede recorrer sin perderse. Entre las métricas por época se registra también el learning rate, lo que permite ver en la curva los escalones exactos donde el scheduler lo bajó.</p>
 
-<p>Los modelos quedan versionados por partida doble: como artefacto de su corrida en MLflow y como archivo con el número de trial y su F1 en el nombre. El estudio de Optuna además persiste en una base SQLite propia, lo que permite reanudar una búsqueda interrumpida y regenerar cualquier gráfico sin volver a entrenar. Las figuras 12, 13 y 14 de este informe se generaron así, meses después de la búsqueda, leyendo esa base.</p>
+<p>Los modelos quedan versionados por partida doble: como artefacto de su corrida en MLflow y como archivo con el número de trial y su F1 en el nombre. El estudio de Optuna además persiste en una base SQLite propia, lo que permite reanudar una búsqueda interrumpida y regenerar cualquier gráfico sin volver a entrenar.</p>
 
-<p>Los datos se versionan a través de <code>data/splits.csv</code>, como se explicó. Las imágenes en sí no entran a Git porque son 3,4 gigabytes, y esa es una limitación real del enfoque: la reproducibilidad depende de que el dataset original siga disponible en Mendeley. Una herramienta como DVC habría permitido versionar los datos con integridad verificable sin meterlos en el repositorio, y sería la mejora natural.</p>
+<p>Conviene aclarar el alcance: la trazabilidad se hizo sobre los experimentos, no sobre los datos. El dataset es fijo y no cambia entre corridas, así que del lado de los datos lo único que hay que registrar es el reparto, y eso se resuelve versionando <code>data/splits.csv</code> en Git, como se explicó; más allá de eso no se hizo nada. Las imágenes en sí no entran a Git porque son 3,4 gigabytes, de modo que la reproducibilidad depende de que el dataset original siga disponible en Mendeley.</p>
 
 <!-- ================================================================= 9 -->
 <h2 id="s9"><span class="num">9</span>Resultados</h2>
 
-<p>Todo lo anterior se decidió mirando el conjunto de validación. El test se mantuvo sin tocar hasta el final y se usó una sola vez, para lo que sigue. Esto importa porque la validación está quemada: se la usó cien veces para elegir hiperparámetros y otras veintitrés para elegir en qué época cortar. Un número medido sobre un conjunto que se usó para elegir está optimistamente sesgado por construcción, y la magnitud de ese sesgo es justamente lo que el test revela.</p>
+<p>Todo lo anterior se decidió mirando el conjunto de validación. El test se mantuvo sin tocar hasta el final y se usó una sola vez, para lo que sigue. Esto importa porque la validación ya dejó de ser un juez imparcial: se la consultó cien veces para elegir hiperparámetros y otras veintitrés para decidir en qué época detener el entrenamiento. Un número medido sobre un conjunto que se usó para elegir está optimistamente sesgado por construcción, y la magnitud de ese sesgo es justamente lo que el test revela.</p>
 
 <figure>
   <img src="img/resultados_curvas.png" alt="Curvas de entrenamiento">
-  <figcaption><span class="etiqueta">Figura 16.</span> Las tres curvas del entrenamiento final. A la izquierda, la pérdida de entrenamiento baja sin parar mientras la de validación toca fondo cerca de la época siete y después sube: sobreajuste de manual. En el centro, el macro-F1 de validación con su pico en la época trece, que es el modelo que se guardó. A la derecha, los escalones del learning rate.</figcaption>
+  <figcaption><span class="etiqueta">Figura 15.</span> Las tres curvas del entrenamiento final. A la izquierda, la pérdida de entrenamiento baja sin parar mientras la de validación toca fondo cerca de la época siete y después sube: hay sobreajuste. En el centro, el macro-F1 de validación con su pico en la época trece, que es el modelo que se guardó. A la derecha, los escalones del learning rate.</figcaption>
 </figure>
 
 <p>Estas curvas dicen tres cosas. La primera es que el modelo sobreajusta con claridad: la pérdida de entrenamiento cae de 1,3 a 0,10 mientras que la de validación toca fondo alrededor de la época siete y a partir de ahí sube hasta 1,28. La segunda es que el macro-F1 de validación no acompaña esa degradación de forma limpia, sino que oscila entre 0,63 y 0,78 durante veintitrés épocas, con un pico en la trece. La tercera se sigue de las dos anteriores y justifica una decisión de diseño: como el modelo que se guarda es el de la mejor época y no el de la última, el sistema conserva el de la época trece, con 0,784, en lugar del de la época veintitrés, con 0,759.</p>
@@ -310,10 +299,6 @@
     <tr><td>Recall de lesiones malignas</td><td class="num">0,929</td><td class="num">0,942</td><td class="num">sube 1,3</td></tr>
   </tbody>
 </table>
-
-<div class="alerta">
-  <p>El macro-F1 cae 9,4 puntos de validación a test, de 0,784 a 0,690. Esa diferencia no es un defecto del modelo sino la medida del sesgo de selección: es lo que se sobreestimaba por elegir mirando el mismo conjunto sobre el que se medía. El número honesto del sistema es 0,690.</p>
-</div>
 
 <p>Llamativamente, el recall de lesiones malignas no cae sino que sube levemente. Esa asimetría es la pista de qué está pasando realmente, y se entiende mirando el detalle por clase.</p>
 
@@ -336,15 +321,15 @@
 
 <figure class="alta">
   <img src="img/resultados_confusion.png" alt="Matrices de confusión en validación y test">
-  <figcaption><span class="etiqueta">Figura 17.</span> Matrices de confusión. Las filas son el diagnóstico real y las columnas el predicho. La celda que explica casi todo el problema está en el test: de veintiocho espinocelulares reales, diecisiete se predicen como basocelulares.</figcaption>
+  <figcaption><span class="etiqueta">Figura 16.</span> Matrices de confusión. Las filas son el diagnóstico real y las columnas el predicho. La celda que explica casi todo el problema está en el test: de veintiocho espinocelulares reales, diecisiete se predicen como basocelulares.</figcaption>
 </figure>
 
 <figure>
   <img src="img/resultados_confusion_norm.png" alt="Matriz de confusión normalizada en test">
-  <figcaption><span class="etiqueta">Figura 18.</span> La misma matriz de test normalizada por clase real, que permite comparar clases de tamaños muy distintos. El 61 por ciento de los espinocelulares se van al basocelular.</figcaption>
+  <figcaption><span class="etiqueta">Figura 17.</span> La misma matriz de test normalizada por clase real, que permite comparar clases de tamaños muy distintos. El 61 por ciento de los espinocelulares se van al basocelular.</figcaption>
 </figure>
 
-<p>La matriz de confusión resuelve el enigma. De los veintiocho carcinomas espinocelulares del test, diecisiete se predicen como basocelulares. El modelo no está diciendo que esas lesiones son benignas: está diciendo que son el otro carcinoma. Ambos son cánceres de piel de origen queratinocítico, se parecen mucho, y en la práctica clínica los dos terminan en el mismo lugar, que es la consulta con un especialista y probablemente la extirpación. Es un error, pero es el error menos grave que el modelo podía cometer sobre esas lesiones.</p>
+<p>De los veintiocho carcinomas espinocelulares del test, diecisiete se predicen como basocelulares. El modelo no está diciendo que esas lesiones son benignas: está diciendo que son el otro carcinoma. Ambos son cánceres de piel de origen queratinocítico, se parecen mucho, y en la práctica clínica los dos terminan en el mismo lugar, que es la consulta con un especialista y probablemente la extirpación. Es un error, pero es el error menos grave que el modelo podía cometer sobre esas lesiones.</p>
 
 <h3>La decisión que importa</h3>
 
@@ -352,7 +337,7 @@
 
 <figure>
   <img src="img/resultados_roc.png" alt="Curvas ROC">
-  <figcaption><span class="etiqueta">Figura 19.</span> A la izquierda, las curvas ROC de cada clase contra el resto, sobre el test. Se ve que cinco de las seis clases están por encima de 0,93 de AUC y que el espinocelular, con 0,793, es el único que se despega hacia abajo. A la derecha, la curva de la decisión clínica, agrupando malignas contra benignas, con un AUC de 0,957.</figcaption>
+  <figcaption><span class="etiqueta">Figura 18.</span> A la izquierda, las curvas ROC de cada clase contra el resto, sobre el test. Se ve que cinco de las seis clases están por encima de 0,93 de AUC y que el espinocelular, con 0,793, es el único que se despega hacia abajo. A la derecha, la curva de la decisión clínica, agrupando malignas contra benignas, con un AUC de 0,957.</figcaption>
 </figure>
 
 <table>
@@ -384,7 +369,7 @@
 <p>Grad-CAM produce un mapa de calor que señala qué zonas de la imagen pesaron en la decisión. Se toma la última capa convolucional, donde la red todavía conserva dónde estaba cada cosa, y se ponderan sus canales por el gradiente del logit de la clase predicha. Dos decisiones de implementación importan. El backward se hace sobre el logit del modelo completo y no de la rama de imagen aislada, así que el mapa refleja la predicción multimodal real. Y como el backbone está congelado, PyTorch no construye el grafo de gradientes y el mapa saldría plano sin lanzar ningún error, un fallo silencioso de los peores, que se evita forzando que el tensor de entrada requiera gradiente.</p>
 
 <figure class="sinborde alta"><img src="img/gradcam_por_clase.jpg" alt="Grad-CAM sobre un caso acertado de cada clase">
-  <figcaption><span class="etiqueta">Figura 20.</span> Grad-CAM sobre un caso acertado de cada clase, del conjunto de test. Arriba la foto original, abajo el mapa de atención. En el basocelular, el espinocelular y la queratosis seborreica el foco cae limpiamente sobre la lesión.</figcaption>
+  <figcaption><span class="etiqueta">Figura 19.</span> Grad-CAM sobre un caso acertado de cada clase, del conjunto de test. Arriba la foto original, abajo el mapa de atención. En el basocelular, el espinocelular y la queratosis seborreica el foco cae limpiamente sobre la lesión.</figcaption>
 </figure>
 
 <p>En los casos que el modelo acierta, el mapa se comporta como uno querría. El foco cae sobre la lesión y no sobre el fondo, con precisión notable en el basocelular, el espinocelular y la queratosis seborreica. El nevo es el caso menos convincente del grupo: el mapa se reparte entre la lesión y la piel de alrededor, aunque la predicción sea correcta con una confianza de 1,00.</p>
@@ -396,10 +381,10 @@
 <p>Los errores son más informativos que los aciertos, y acá lo fueron.</p>
 
 <figure class="sinborde alta"><img src="img/gradcam_errores.jpg" alt="Grad-CAM sobre cuatro casos mal clasificados">
-  <figcaption><span class="etiqueta">Figura 21.</span> Grad-CAM sobre los primeros cuatro casos mal clasificados del test. El cuarto es el más preocupante: en un basocelular predicho como nevo, el mapa se enciende sobre el fondo y deja la lesión completamente apagada.</figcaption>
+  <figcaption><span class="etiqueta">Figura 20.</span> Grad-CAM sobre los primeros cuatro casos mal clasificados del test. El cuarto es el más preocupante: en un basocelular predicho como nevo, el mapa se enciende sobre el fondo y deja la lesión completamente apagada.</figcaption>
 </figure>
 
-<p>Los dos primeros casos son espinocelulares predichos como queratosis actínica, y el mapa es difuso y débil: el modelo no encuentra dónde agarrarse. Es coherente con el mal desempeño en esa clase.</p>
+<p>El primero y el tercero son espinocelulares predichos como queratosis actínica, y el mapa es difuso y débil: el modelo no encuentra dónde agarrarse. Es coherente con el mal desempeño en esa clase.</p>
 
 <p>El cuarto caso es el más grave. Es un carcinoma basocelular predicho como nevo, y el mapa está invertido: la zona roja cubre la piel de alrededor mientras que la lesión, bien visible en el centro de la foto, queda apagada. El modelo decidió mirando cualquier cosa menos la lesión. Es un error de atención, no de criterio, y en un caso maligno.</p>
 
@@ -411,17 +396,17 @@
 
 <figure>
   <img src="img/shap_local.png" alt="Explicación SHAP de un paciente concreto">
-  <figcaption><span class="etiqueta">Figura 22.</span> Explicación local de un paciente del test con carcinoma basocelular, correctamente predicho con una confianza de 0,922. Se eligió deliberadamente un caso con la ficha clínica completa, para que las contribuciones no midan el efecto de la imputación.</figcaption>
+  <figcaption><span class="etiqueta">Figura 21.</span> Explicación local de un paciente del test con carcinoma basocelular, correctamente predicho con una confianza de 0,922. Se eligió deliberadamente un caso con la ficha clínica completa, para que las contribuciones no midan el efecto de la imputación.</figcaption>
 </figure>
 
 <figure class="alta">
   <img src="img/shap_global.png" alt="Importancia global de las variables clínicas">
-  <figcaption><span class="etiqueta">Figura 23.</span> Importancia global, calculada como el promedio del valor absoluto de las contribuciones SHAP sobre treinta pacientes del test. La edad domina, con casi el doble de la segunda variable.</figcaption>
+  <figcaption><span class="etiqueta">Figura 22.</span> Importancia global, calculada como el promedio del valor absoluto de las contribuciones SHAP sobre treinta pacientes del test. La edad domina, con casi el doble de la segunda variable.</figcaption>
 </figure>
 
 <p>La edad domina, con una magnitud media de 0,083, casi el doble que la región del cuerpo. Después aparecen si la lesión creció, los antecedentes familiares, si cambió y el diámetro. Es un ranking clínicamente sensato: son las variables que un dermatólogo pondera al interrogar, y el modelo llegó a ellas solo. Que la explicabilidad devuelva algo que coincide con el conocimiento del dominio es una señal de que el modelo no está aprendiendo cualquier cosa.</p>
 
-<h3>El hallazgo incómodo</h3>
+<h3>Cuánto pesa realmente la ficha clínica</h3>
 
 <div class="alerta">
   <p>La variable clínica más importante mueve la probabilidad 0,083 en promedio. El modelo predice con confianzas de 0,92 y 1,00. La aritmética es simple: las variables clínicas no están decidiendo casi nada. La imagen domina la decisión de manera abrumadora.</p>
@@ -465,27 +450,25 @@
 
 <p>Ese ejemplo muestra las dos decisiones que apuntan a que el servicio aguante el mundo real. La primera es la tolerancia del contrato: se mandaron tres variables de veintiuna y la API respondió igual, porque normaliza la ficha contra las esperadas, rellenando con nulos las que faltan e ignorando las que sobran, y el resto lo resuelven el imputador y el codificador que ignora categorías desconocidas. Un pedido con la ficha incompleta es exactamente lo que va a pasar en producción. La segunda es que el modelo se carga de forma perezosa, en el primer pedido, y si los artefactos no están la API responde 503 diciendo qué falta, en lugar de morir al arrancar.</p>
 
-<p>La contracara, que es justo señalar, es que la ficha se recibe como texto JSON y se parsea a mano, sin un modelo de Pydantic, así que el esquema clínico no queda declarado y un cliente tiene que consultar <code>/features</code> para saber qué mandar. Definirlo sería una mejora barata y clara. Tampoco hay límite a la cantidad de imágenes que acepta el endpoint batch, lo que es un riesgo evidente si el servicio quedara expuesto.</p>
-
 <h3>La interfaz</h3>
 
 <p>La interfaz está hecha con Streamlit y no busca parecer una demo sino un sistema de apoyo diagnóstico. Toda está en español clínico, con los códigos traducidos a sus nombres, y lleva un aviso permanente de que es una herramienta académica que no reemplaza el juicio profesional.</p>
 
 <figure class="alta">
   <img src="img/ui_directorio.jpg" alt="La interfaz de Streamlit con el directorio de pacientes">
-  <figcaption><span class="etiqueta">Figura 24.</span> La pantalla principal. A la izquierda el directorio permite elegir un paciente del conjunto de test o cargar una ficha nueva, y muestra el estado del servicio de inferencia consultando el endpoint de salud. Arriba, la barra de contexto del paciente. Si el paciente tiene más de una lesión registrada, aparece un selector.</figcaption>
+  <figcaption><span class="etiqueta">Figura 23.</span> La pantalla principal. A la izquierda el directorio permite elegir un paciente del conjunto de test o cargar una ficha nueva, y muestra el estado del servicio de inferencia consultando el endpoint de salud. Arriba, la barra de contexto del paciente. Si el paciente tiene más de una lesión registrada, aparece un selector.</figcaption>
 </figure>
 
 <p>El flujo imita el de una consulta. Se elige el paciente, se revisa su ficha organizada en tres grupos, paciente, antecedentes y lesión, y se analiza. Los casos del dataset se muestran bloqueados en modo lectura, con un botón para editarlos, mientras que las fichas nuevas nacen editables, lo que evita modificar sin querer un caso registrado y creer que el modelo cambió de opinión solo.</p>
 
 <figure class="alta">
   <img src="img/ui_ficha.jpg" alt="La imagen clínica y la ficha con los síntomas">
-  <figcaption><span class="etiqueta">Figura 25.</span> La imagen clínica junto a la ficha de la lesión. Los síntomas que el análisis exploratorio mostró como discriminantes, si creció, si duele, si sangró, están acá y viajan a la API junto con la foto.</figcaption>
+  <figcaption><span class="etiqueta">Figura 24.</span> La imagen clínica junto a la ficha de la lesión. Los síntomas que el análisis exploratorio mostró como discriminantes, si creció, si duele, si sangró, están acá y viajan a la API junto con la foto.</figcaption>
 </figure>
 
 <figure class="alta">
   <img src="img/ui_resultado.jpg" alt="El resultado del análisis con el diagnóstico diferencial">
-  <figcaption><span class="etiqueta">Figura 26.</span> El resultado. El sistema devuelve un carcinoma basocelular con 97,3 por ciento de confianza, lo marca como maligno y de riesgo alto, y como el caso viene del dataset agrega el diagnóstico confirmado por biopsia, que coincide. Abajo, el diferencial completo con las seis clases ordenadas por probabilidad.</figcaption>
+  <figcaption><span class="etiqueta">Figura 25.</span> El resultado. El sistema devuelve un carcinoma basocelular con 97,3 por ciento de confianza, lo marca como maligno y de riesgo alto, y como el caso viene del dataset agrega el diagnóstico confirmado por biopsia, que coincide. Abajo, el diferencial completo con las seis clases ordenadas por probabilidad.</figcaption>
 </figure>
 
 <p>La lectura no se agota en el diagnóstico más probable. La probabilidad de malignidad es la suma de las tres clases malignas, que es la cifra correspondiente a la decisión clínica discutida en los resultados, y se traduce a un nivel de riesgo. El diferencial completo importa porque un sistema que solo dijera basocelular escondería que el espinocelular quedó segundo, y esas dos clases son justamente las que el modelo confunde: mostrar la distribución entera le permite al médico ver la duda del modelo en lugar de recibir una sentencia. El diagnóstico confirmado por biopsia que aparece abajo es una funcionalidad para mostrar el sistema, no para producción, donde ese dato no existiría al momento de predecir.</p>
@@ -494,20 +477,21 @@
 
 <figure class="sinborde">
   <object data="img/diagrama_despliegue.svg" type="image/svg+xml" aria-label="Diagrama del despliegue en AWS"></object>
-  <figcaption><span class="etiqueta">Figura 27.</span> El despliegue. Los dos contenedores corren sobre una instancia EC2 y solo la interfaz se publica hacia afuera; la API queda accesible únicamente desde la red interna de Docker.</figcaption>
+  <figcaption><span class="etiqueta">Figura 26.</span> El despliegue. Los dos contenedores corren sobre una instancia EC2 y solo la interfaz se publica hacia afuera; la API queda accesible únicamente desde la red interna de Docker.</figcaption>
 </figure>
 
-<p>El sistema corre en dos contenedores sobre una instancia EC2 t3.medium con Amazon Linux 2023, en la región de Virginia. La elección de EC2 sobre alternativas más elegantes como Fargate o Elastic Beanstalk no fue por preferencia sino por una restricción concreta del AWS Academy Learner Lab: no permite crear roles de IAM, y solo existe un rol predefinido. Eso descarta esos servicios, que necesitan roles propios. EC2 es el camino que quedaba, y tiene la ventaja de reaprovechar los mismos contenedores del repositorio sin cambios.</p>
+<p>El sistema se llevó a la nube tal como corre en local: los mismos dos contenedores de Docker, uno para la API y otro para la interfaz, se levantaron sobre una instancia EC2 de AWS Academy. No hubo que tocar el código ni rearmar las imágenes, se reutilizaron las del repositorio sin cambios.</p>
 
-<p>La configuración de producción se endurece respecto de la de desarrollo en tres puntos. Solo se publica el puerto de la interfaz, y la API queda accesible únicamente desde la red interna de Docker, lo que reduce la superficie expuesta. Los contenedores se reinician solos, algo necesario porque la instancia se detiene al cerrarse la sesión del lab. Y la interfaz espera a que la API pase su healthcheck antes de arrancar, en lugar de confiar en el orden.</p>
-
-<p>El detalle del que estamos más conformes es la imagen de la API. La versión de PyTorch que se instala por defecto trae todo el soporte de GPU y produce una imagen de unos 7 gigabytes. Como la inferencia acá corre en CPU, porque el Learner Lab no da GPU y una EfficientNet-B2 sobre CPU responde de sobra para este caso, se instala la variante de PyTorch compilada solo para CPU. La imagen baja a unos 2 gigabytes. Sobre una instancia con 30 gigabytes de disco y una conexión que hay que esperar, esa diferencia es la que separa un despliegue viable de uno que no entra.</p>
-
-<p>Las dependencias están separadas en capas, con un archivo base y tres que lo extienden para producción, interfaz y desarrollo. Esta separación no es cosmética: gracias a ella MLflow, Optuna y SHAP, que pesan mucho, no entran a la imagen de serving, porque el servicio no los necesita. Hay dos restos que conviene limpiar: <code>lightgbm</code> figura entre las dependencias de producción sin que nadie lo importe, y <code>plotly</code> entre las de la interfaz, que usa tablas HTML.</p>
+<p>Con la instancia en marcha, accedimos a la interfaz desde el navegador de nuestros propios ordenadores, apuntando a la IP pública de la instancia, y desde ahí cargamos un caso y obtuvimos su diagnóstico: el sistema hizo inferencia de punta a punta en la nube, con el mismo flujo que en local. Solo se publica hacia afuera el puerto de la interfaz; la API queda accesible únicamente desde la red interna de Docker, de modo que la única puerta abierta es la pantalla que usa el médico.</p>
 
 <figure>
-  <div class="placeholder">Captura pendiente: la instancia EC2 corriendo, o la aplicación accedida por la IP pública.<br>Guardar como <code>informe/img/aws_ec2.png</code></div>
-  <figcaption><span class="etiqueta">Figura 28.</span> El sistema desplegado y accesible desde la IP pública de la instancia.</figcaption>
+  <img src="img/aws_ec2.png" alt="Consola de EC2 con la instancia en ejecución">
+  <figcaption><span class="etiqueta">Figura 27.</span> La instancia EC2 en ejecución en la consola de AWS Academy, con el sistema ya levantado.</figcaption>
+</figure>
+
+<figure>
+  <img src="img/aws_deploy.png" alt="La interfaz accedida desde la IP pública de la instancia">
+  <figcaption><span class="etiqueta">Figura 28.</span> La interfaz abierta desde nuestro navegador contra la IP pública de la instancia, analizando una lesión: el despliegue en la nube respondiendo inferencia real.</figcaption>
 </figure>
 
 <!-- ================================================================= 12 -->
