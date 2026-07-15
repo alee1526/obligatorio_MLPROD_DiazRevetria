@@ -1,7 +1,7 @@
 # Clasificador de lesiones de piel (PAD-UFES-20)
 
-> README inicial. El proyecto está en construcción; esta descripción y las
-> instrucciones de uso se irán completando a medida que avancen las fases.
+> **Informe de la entrega: [`informe/informe.html`](informe/informe.html)**
+> (abrirlo en el navegador; explica cada etapa y discute los resultados).
 
 Sistema de Machine Learning end-to-end que clasifica lesiones de piel en 6
 diagnósticos (BCC, MEL, SCC, ACK, NEV, SEK) combinando **imágenes clínicas** y
@@ -12,6 +12,26 @@ interfaz de usuario y contenedores Docker.
 
 Dataset: [PAD-UFES-20](https://data.mendeley.com/datasets/zr7vgbcyr2/1) — 2.298
 imágenes de smartphone de 1.373 pacientes, con metadatos clínicos asociados.
+
+## Resultados
+
+Modelo final: EfficientNet-B2 multimodal (trial 56 de Optuna), evaluado sobre el
+split de **test** (329 imágenes, nunca usado para tomar decisiones).
+
+| Métrica | Validación | Test |
+|---|---|---|
+| macro-F1 (6 clases) | 0.784 | **0.690** |
+| balanced accuracy | 0.769 | 0.703 |
+| recall de lesiones malignas | 0.929 | **0.942** |
+| AUC maligno vs benigno | — | **0.957** |
+
+La caída de val a test (9.4 puntos) es el sesgo de selección: val se usó 100
+veces para elegir hiperparámetros. El sistema es mediocre separando las 6 clases
+(el carcinoma espinocelular se confunde con el basocelular) pero bueno en la
+decisión clínica que motiva el proyecto. El informe lo desarrolla.
+
+Progresión: baseline **0.650** → primer estudio (25 trials, B0) **0.771** →
+estudio de 100 trials (B2) **0.784**, todo en macro-F1 de validación.
 
 ## Estructura del repositorio
 
@@ -39,7 +59,7 @@ Despliegue de la app (API FastAPI + UI Streamlit) en una **instancia EC2** del
 **AWS Academy Learner Lab**, corriendo con `docker compose`. Se eligió EC2 por
 ser el camino de menor fricción: reaprovecha los contenedores del repo y **no
 requiere crear roles IAM** (lo que descarta Elastic Beanstalk y ECS/Fargate en
-el Learner Lab). El modelo es una EfficientNet-B0 multimodal (~20 MB) que corre
+el Learner Lab). El modelo es una EfficientNet-B2 multimodal (~32 MB) que corre
 en **CPU**, así que no se necesita GPU.
 
 Archivos de despliegue:

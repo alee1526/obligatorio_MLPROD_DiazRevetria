@@ -1,0 +1,359 @@
+/* Informe — Machine Learning en Producción
+   Sobrio, pensado para leerse en pantalla y para imprimirse a PDF. */
+
+:root {
+  --azul: #1f3a5f;
+  --azul-claro: #eef2f7;
+  --rojo: #9b2226;
+  --verde: #2e5d34;
+  --texto: #23282f;
+  --gris: #5b6470;
+  --borde: #ccd3dc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--texto);
+  background: #f4f6f8;
+  margin: 0;
+  padding: 0;
+  line-height: 1.72;
+  font-size: 17px;
+}
+
+.hoja {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 64px 72px 80px;
+  box-shadow: 0 1px 14px rgba(0, 0, 0, 0.08);
+}
+
+/* ---------------------------------------------------------------- portada */
+
+.portada {
+  border-bottom: 3px double var(--azul);
+  padding-bottom: 34px;
+  margin-bottom: 14px;
+}
+
+.portada .institucion {
+  font-size: 13px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin: 0 0 22px;
+}
+
+.portada h1 {
+  font-size: 33px;
+  line-height: 1.28;
+  color: var(--azul);
+  margin: 0 0 10px;
+  font-weight: normal;
+}
+
+.portada .subtitulo {
+  font-size: 19px;
+  color: var(--gris);
+  font-style: italic;
+  margin: 0 0 26px;
+}
+
+.portada .meta {
+  font-size: 15px;
+  color: var(--gris);
+  line-height: 1.9;
+}
+
+.portada .meta strong { color: var(--texto); font-weight: normal; }
+
+/* ------------------------------------------------------------- estructura */
+
+h2 {
+  font-size: 23px;
+  color: var(--azul);
+  font-weight: normal;
+  margin: 54px 0 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--borde);
+}
+
+h2 .num {
+  color: var(--borde);
+  font-size: 19px;
+  margin-right: 12px;
+}
+
+h3 {
+  font-size: 18px;
+  color: var(--texto);
+  font-weight: bold;
+  margin: 32px 0 4px;
+}
+
+p { margin: 0 0 15px; text-align: justify; hyphens: none; }
+
+a { color: var(--azul); text-decoration: none; border-bottom: 1px solid var(--borde); }
+a:hover { border-bottom-color: var(--azul); }
+
+code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.845em;
+  background: var(--azul-claro);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--azul);
+}
+
+/* ----------------------------------------------------------------- indice */
+
+.indice {
+  background: var(--azul-claro);
+  padding: 24px 30px;
+  margin: 32px 0 8px;
+  border-left: 3px solid var(--azul);
+}
+
+.indice p { margin: 0 0 10px; font-size: 15px; color: var(--gris); text-align: left; }
+.indice ol { margin: 0; padding-left: 22px; columns: 2; column-gap: 34px; }
+.indice li { font-size: 14.5px; margin-bottom: 5px; break-inside: avoid; }
+.indice a { border: none; color: var(--texto); }
+.indice a:hover { color: var(--azul); }
+
+/* ---------------------------------------------------------------- figuras */
+
+figure {
+  margin: 28px 0;
+  padding: 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+figure img, figure svg, figure object {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--borde);
+  background: #fff;
+}
+
+figure.sinborde img, figure.sinborde object { border: none; }
+
+figcaption {
+  font-size: 13.5px;
+  color: var(--gris);
+  margin-top: 9px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+figcaption .etiqueta { color: var(--azul); font-weight: bold; }
+
+.placeholder {
+  border: 2px dashed var(--borde);
+  background: var(--azul-claro);
+  padding: 54px 24px;
+  text-align: center;
+  color: var(--gris);
+  font-size: 14.5px;
+  font-style: italic;
+}
+
+.placeholder code { font-style: normal; }
+
+/* ------------------------------------------------------------ codigo bloque */
+
+pre.codigo {
+  background: var(--azul-claro);
+  border-left: 3px solid var(--azul);
+  padding: 14px 18px;
+  margin: 22px 0;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--texto);
+  overflow-x: auto;
+  white-space: pre;
+  break-inside: avoid;
+}
+
+/* ---------------------------------------------------------------- tablas */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  margin: 24px 0;
+  break-inside: avoid;
+}
+
+caption {
+  caption-side: bottom;
+  font-size: 13.5px;
+  color: var(--gris);
+  text-align: left;
+  padding-top: 9px;
+  line-height: 1.6;
+}
+
+caption .etiqueta { color: var(--azul); font-weight: bold; }
+
+th, td {
+  border: 1px solid var(--borde);
+  padding: 7px 11px;
+  text-align: left;
+}
+
+th {
+  background: var(--azul-claro);
+  color: var(--azul);
+  font-weight: bold;
+}
+
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+tbody tr:nth-child(even) { background: #fafbfc; }
+
+tr.destacada td { background: #fdf6e8; font-weight: bold; }
+
+.maligno { color: var(--rojo); }
+.benigno { color: var(--verde); }
+
+/* --------------------------------------------------------------- destaque */
+
+.destaque {
+  background: var(--azul-claro);
+  border-left: 3px solid var(--azul);
+  padding: 18px 24px;
+  margin: 26px 0;
+  break-inside: avoid;
+}
+
+.destaque p { margin: 0; font-size: 15.5px; }
+.destaque p + p { margin-top: 11px; }
+
+.alerta {
+  background: #fdf3f3;
+  border-left: 3px solid var(--rojo);
+  padding: 18px 24px;
+  margin: 26px 0;
+  break-inside: avoid;
+}
+
+.alerta p { margin: 0; font-size: 15.5px; }
+.alerta p + p { margin-top: 11px; }
+
+/* ------------------------------------------------------------------ cifras */
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 30px 0;
+  break-inside: avoid;
+}
+
+.cifra {
+  border: 1px solid var(--borde);
+  border-top: 3px solid var(--azul);
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.cifra .valor {
+  font-size: 27px;
+  color: var(--azul);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifra .etiqueta {
+  font-size: 12.5px;
+  color: var(--gris);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+/* -------------------------------------------------------------------- pie */
+
+.pie {
+  margin-top: 62px;
+  padding-top: 22px;
+  border-top: 1px solid var(--borde);
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+.pie p { text-align: left; margin-bottom: 9px; }
+
+/* --------------------------------------------------------------- impresion */
+
+@media print {
+  /* El objetivo acá es densidad: que entre la mayor cantidad de contenido por
+     hoja sin que deje de leerse. Nada de saltos de página por sección. */
+  body { background: #fff; font-size: 9.3pt; line-height: 1.42; }
+  .hoja { max-width: none; box-shadow: none; padding: 0; margin: 0; }
+  @page { margin: 13mm 12mm; }
+
+  p { margin: 0 0 6px; }
+
+  h2 {
+    page-break-after: avoid;
+    break-after: avoid;
+    margin: 16px 0 4px;
+    padding-bottom: 3px;
+    font-size: 12.5pt;
+  }
+  h3 { page-break-after: avoid; break-after: avoid; font-size: 10pt; margin: 10px 0 2px; }
+  p, li { orphans: 2; widows: 2; }
+
+  figure, table, .destaque, .alerta, .cifras, pre.codigo {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  pre.codigo { font-size: 7.6pt; padding: 7px 11px; margin: 10px 0; line-height: 1.45; }
+
+  /* Las figuras son el gasto principal de papel. Se limitan en alto para que
+     entren dos o tres por hoja junto con su texto. */
+  figure { margin: 10px 0; text-align: center; }
+  figure img, figure object {
+    max-height: 62mm;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    margin: 0 auto;
+  }
+  figure.alta img, figure.alta object { max-height: 88mm; }
+  figcaption { font-size: 8pt; margin-top: 4px; line-height: 1.35; }
+
+  table { font-size: 8.4pt; margin: 10px 0; }
+  th, td { padding: 3px 6px; }
+  caption { font-size: 8pt; padding-top: 4px; }
+
+  .destaque, .alerta { padding: 8px 12px; margin: 10px 0; }
+  .destaque p, .alerta p { font-size: 9pt; }
+
+  .cifras { gap: 8px; margin: 12px 0; }
+  .cifra { padding: 7px 6px; }
+  .cifra .valor { font-size: 13pt; }
+  .cifra .etiqueta { font-size: 7.5pt; margin-top: 2px; }
+
+  a { color: var(--texto); border: none; }
+
+  .portada { padding-bottom: 12px; margin-bottom: 8px; }
+  .portada h1 { font-size: 19pt; margin-bottom: 4px; }
+  .portada .subtitulo { font-size: 11pt; margin-bottom: 10px; }
+  .portada .institucion { font-size: 8pt; margin-bottom: 10px; }
+  .portada .meta { font-size: 9pt; line-height: 1.5; }
+
+  .indice { padding: 10px 16px; margin: 12px 0 4px; }
+  .indice li { font-size: 8.5pt; margin-bottom: 1px; }
+  .indice ol { columns: 3; column-gap: 16px; }
+
+  .pie { margin-top: 20px; padding-top: 10px; font-size: 8pt; }
+  .pie p { margin-bottom: 4px; }
+}
