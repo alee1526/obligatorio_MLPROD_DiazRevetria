@@ -15,7 +15,8 @@ from src.models.losses import build_loss
 from src.models.metrics import compute_metrics
 
 MODELS_DIR = DATA_DIR.parent / "models"
-MLFLOW_URI = str(DATA_DIR.parent / "mlruns")
+# file:// URI (no str crudo): en Windows MLflow interpretaria "C:" como scheme.
+MLFLOW_URI = (DATA_DIR.parent / "mlruns").as_uri()
 
 
 def get_device():

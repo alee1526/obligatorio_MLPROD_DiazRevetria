@@ -1,0 +1,44 @@
+# Despliegue en una instancia EC2 (AWS Academy Learner Lab).
+#
+# Diferencias con docker-compose.yml (desarrollo):
+#   - Solo se publica la UI (8501). La API queda en la red interna de Docker
+#     (accesible por la UI como http://api:8000), no se expone al exterior.
+#   - restart: unless-stopped -> los contenedores vuelven a levantar si la
+#     instancia se reinicia al recuperar la sesion del lab.
+#   - La UI espera a que la API este "healthy" antes de arrancar.
+#
+# Requisito previo: la carpeta ./models debe contener model.pt y
+# tabular_transformer.joblib (el Dockerfile.api los copia a la imagen).
+#
+# Uso en la instancia:
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    image: skin-lesion-api:prod
+    environment:
+      - APP_ENV=prod
+    expose:
+      - "8000"          # solo visible dentro de la red de Docker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+    image: skin-lesion-ui:prod
+    environment:
+      - API_URL=http://api:8000
+    ports:
+      - "8501:8501"     # unico puerto publicado al host / Security Group
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
