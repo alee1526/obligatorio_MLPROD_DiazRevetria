@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd
 import streamlit as st
 
+from src.data.dataset_utils import RAW_DIR
 from streamlit_app.ui_utils import (API_URL, CLASS_NAMES, FIELD_LABELS, GROUPS, MALIGNANT,
                                     PATIENT_FICHA, VALUE_LABELS, api_online, call_predict,
                                     categorical_options, is_numeric, label_value, load_catalog,
@@ -45,11 +46,16 @@ def get_catalog():
     return load_catalog()
 
 
+catalog, options, catalog_error = None, {}, None
 try:
-    catalog = get_catalog()
-    options = categorical_options(catalog)
-except Exception:
-    catalog, options = None, {}
+    df = get_catalog()
+    if df.empty:
+        catalog_error = (f"No se encontró ninguna imagen indexada. Se esperan PNG en "
+                         f"{RAW_DIR}/imgs_part_*/*.png (no sueltos en {RAW_DIR}).")
+    else:
+        catalog, options = df, categorical_options(df)
+except Exception as e:
+    catalog_error = f"{type(e).__name__}: {e}"
 
 
 def notna_value(v):
@@ -173,7 +179,8 @@ with st.sidebar:
             patient_rows = catalog[catalog["patient_id"] == sel_pid].reset_index(drop=True)
             st.caption("Identificadores anonimizados del dataset PAD-UFES-20.")
         else:
-            st.info("Catálogo sin datos. Utilice 'Cargar nueva ficha'.")
+            st.warning("Catálogo sin datos. Utilice 'Cargar nueva ficha'.")
+            st.caption(catalog_error)
     st.divider()
     dot = "#2e5d34" if api_online() else "#9b2226"
     estado = "En línea" if api_online() else "Sin conexión"

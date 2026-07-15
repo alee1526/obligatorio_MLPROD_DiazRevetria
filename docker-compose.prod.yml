@@ -38,6 +38,11 @@ services:
       - API_URL=http://api:8000
     ports:
       - "8501:8501"     # unico puerto publicado al host / Security Group
+    volumes:
+      # El catalogo de "Paciente registrado" se lee del disco de la instancia:
+      # data/ esta en .dockerignore para no meter el dataset (3.4 GB) en la
+      # imagen. Se monta en solo lectura y alcanza con el split de test.
+      - ./data:/app/data:ro
     depends_on:
       api:
         condition: service_healthy

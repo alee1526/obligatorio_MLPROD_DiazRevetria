@@ -23,5 +23,7 @@ services:
       - "8501:8501"
     environment:
       - API_URL=http://api:8000
+    volumes:
+      - ./data:/app/data:ro
     depends_on:
       - api

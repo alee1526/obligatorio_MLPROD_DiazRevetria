@@ -75,9 +75,14 @@ Si no los tenés, generalos con `python -m src.features.preprocess` y
 `python -m src.models.train` (ver flujo de entrenamiento). `models/` está en
 `.gitignore`, así que estos archivos se suben a la instancia aparte (paso 5).
 
-> Nota: `data/` está en `.dockerignore`, por lo que dentro del contenedor el
-> selector "Paciente registrado" queda vacío; en AWS la UI funciona con **carga
-> manual de imagen**.
+> Nota: `data/` está en `.dockerignore` y no entra en la imagen (son 3.4 GB).
+> En su lugar, `docker-compose.prod.yml` monta `./data` de la instancia en
+> `/app/data` (solo lectura). El selector "Paciente registrado" funciona si en
+> la instancia existen `data/raw/metadata.csv`, `data/splits.csv` y las imágenes
+> **dentro de un subdirectorio** `data/raw/imgs_part_*/` (así lo exige el glob
+> de `src/data/dataset_utils.py`; sueltas en `data/raw/` no se indexan). Alcanza
+> con el split de test (329 imágenes). Si falta la data, la UI sigue andando con
+> **carga manual de imagen** y el sidebar informa el motivo.
 
 ### Pasos desde cero
 

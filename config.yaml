@@ -34,4 +34,4 @@ aug_color: 0.1838865764547642   # brillo/contraste/saturación
 aug_erase: 0.15487226696027984  # prob. de RandomErasing (0 = off)
 
 # optuna
-n_trials: 25
+n_trials: 100
